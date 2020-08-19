@@ -106,14 +106,30 @@ public enum Direction {
 
     // accepted directions: UP, DOWN
     private static void column(final int[][] field, final boolean up) {
-        int[] previousLine = field[0];
-
         if (up) {
-            for (int i = 1; i < field.length; ++i) {
-
+            for (int i = 0; i < field.length; ++i) {
+                global:
+                while (!shouldStopU(field, i)) {
+                    for (int j = 0; j < field.length; ++j) { // j = cell index
+                        if (field[j][i] == 0) {
+                            swap(field, j, i, j, indexOfNearestNonZeroValueFromTheEndOfColumn(field, i, j));
+                            continue global;
+                        }
+                    }
+                }
             }
         } else {
-
+            for (int i = 0; i < field.length; ++i) {
+                global:
+                while (!shouldStopD(field, i)) {
+                    for (int j = field.length - 1; j > 0; --j) { // j = cell index
+                        if (field[j][i] == 0) {
+                            swap(field, j, i, j, indexOfNearestNonZeroValueFromTheStartOfColumn(field, i, j));
+                            continue global;
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -149,7 +165,11 @@ public enum Direction {
     private static int indexOfNearestNonZeroValueFromTheStartOfColumn(
             final int[][] field, final int columnI, int i
     ) {
-        
+        for (; i < field.length; ++i)
+            if (field[i][columnI] != 0)
+                return i;
+
+        return -1;
     }
 
     // down
