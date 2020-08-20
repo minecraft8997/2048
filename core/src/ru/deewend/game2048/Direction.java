@@ -106,87 +106,48 @@ public enum Direction {
 
     // accepted directions: UP, DOWN
     private static void column(final int[][] field, final boolean up) {
-        if (up) {
-            for (int i = 0; i < field.length; ++i) {
-                global:
-                while (!shouldStopU(field, i)) {
-                    for (int j = 0; j < field.length; ++j) { // j = cell index
-                        if (field[j][i] == 0) {
-                            swap(field, j, i, j, indexOfNearestNonZeroValueFromTheEndOfColumn(field, i, j));
-                            continue global;
-                        }
-                    }
-                }
+        transform(field);
+        line(field, !up);
+        retrieve(field);
+    }
+
+    // this method rotates the matrix by 90 degrees in clockwise direction
+    private static void transform(final int[][] field) {
+        final int n = field.length;
+
+        // Transpose the matrix
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < i; j++) {
+                final int temp = field[i][j];
+
+                field[i][j] = field[j][i];
+                field[j][i] = temp;
             }
-        } else {
-            for (int i = 0; i < field.length; ++i) {
-                global:
-                while (!shouldStopD(field, i)) {
-                    for (int j = field.length - 1; j > 0; --j) { // j = cell index
-                        if (field[j][i] == 0) {
-                            swap(field, j, i, j, indexOfNearestNonZeroValueFromTheStartOfColumn(field, i, j));
-                            continue global;
-                        }
-                    }
-                }
+
+        // swap columns
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n / 2; j++) {
+                final int temp = field[i][j];
+
+                field[i][j] = field[i][n - j - 1];
+                field[i][n - j - 1] = temp;
+            }
+    }
+
+    // and this method rotates the matrix by 90 degrees in anti-clockwise direction
+    private static void retrieve(final int[][] field) {
+        final int n = field.length;
+
+        for (int x = 0; x < n / 2; x++) {
+            for (@SuppressWarnings("SuspiciousNameCombination") int y = x; y < n - x - 1; y++) {
+                final int temp = field[x][y];
+
+                field[x][y] = field[y][n - 1 - x];
+                field[y][n - 1 - x] = field[n - 1 - x][n - 1 - y];
+                field[n - 1 - x][n - 1 - y] = field[n - 1 - y][x];
+                field[n - 1 - y][x] = temp;
             }
         }
-    }
-
-    // up
-    private static int indexOfNearestNonZeroValueFromTheEndOfColumn(
-            final int[][] field, final int columnI, int i
-    ) {
-        for (; i >= 0; --i)
-            if (field[i][columnI] != 0)
-                return i;
-
-        return -1;
-    }
-
-    // up
-    private static boolean shouldStopU(final int[][] field, final int columnI) {
-        boolean currentValueMustBeZero = false;
-
-        for (final int[] line : field) {
-            if (!currentValueMustBeZero && line[columnI] == 0) {
-                currentValueMustBeZero = true;
-                continue;
-            }
-
-            if (currentValueMustBeZero && line[columnI] != 0)
-                return false;
-        }
-
-        return true;
-    }
-
-    // down
-    private static int indexOfNearestNonZeroValueFromTheStartOfColumn(
-            final int[][] field, final int columnI, int i
-    ) {
-        for (; i < field.length; ++i)
-            if (field[i][columnI] != 0)
-                return i;
-
-        return -1;
-    }
-
-    // down
-    private static boolean shouldStopD(final int[][] field, final int columnI) {
-        boolean currentValueMustBeNonZero = false;
-
-        for (final int[] line : field) {
-            if (!currentValueMustBeNonZero && line[columnI] != 0) {
-                currentValueMustBeNonZero = true;
-                continue;
-            }
-
-            if (currentValueMustBeNonZero && line[columnI] == 0)
-                return false;
-        }
-
-        return true;
     }
 
     private static void swap(final int[][] field, final int i0, final int j0, final int i1, final int j1) {
