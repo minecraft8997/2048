@@ -3,25 +3,36 @@ package ru.deewend.game2048;
 import java.util.Objects;
 
 public enum Direction {
-    LEFT(field -> {
+    LEFT(field -> { // movable
         line(field, true);
+    }, field -> { // fixable
+        fixLines(field, true);
     }),
-    RIGHT(field -> {
+    RIGHT(field -> { // movable
         line(field, false);
+    }, field -> { // fixable
+        fixLines(field, false);
     }),
-    UP(field -> {
+    UP(field -> { // movable
         column(field, true);
+    }, field -> { // fixable
+        fixColumns(field, true);
     }),
-    DOWN(field -> {
+    DOWN(field -> { // movable
         column(field, false);
+    }, field -> { // fixable
+        fixColumns(field, false);
     });
 
     private final Movable movable;
+    private final Fixable fixable;
 
-    Direction(final Movable movable) {
+    Direction(final Movable movable, final Fixable fixable) {
         Objects.requireNonNull(movable);
+        Objects.requireNonNull(fixable);
 
         this.movable = movable;
+        this.fixable = fixable;
     }
 
     // accepted directions: LEFT, RIGHT
@@ -159,5 +170,39 @@ public enum Direction {
 
     public void move(final int[][] field) {
         movable.move(field);
+    }
+
+    private static void fixLines(final int[][] field, final boolean left) {
+        for (int i = 0; i < field.length; ++i) {
+            if (left) {
+                for (int j = 0; j < field[i].length - 1; ++j) {
+                    if (field[i][j] == field[i][j + 1]) {
+                        field[i][j]++;
+                        field[i][j + 1] = 0;
+
+                        LEFT.move(field);
+                    }
+                }
+            } else {
+                for (int j = field[i].length - 1; j > 0; --j) {
+                    if (field[i][j] == field[i][j - 1]) {
+                        field[i][j]++;
+                        field[i][j - 1] = 0;
+
+                        RIGHT.move(field);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void fixColumns(final int[][] field, final boolean up) {
+        transform(field);
+        fixLines(field, !up);
+        retrieve(field);
+    }
+
+    public void fix(final int[][] field) {
+        fixable.fix(field);
     }
 }

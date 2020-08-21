@@ -12,6 +12,7 @@ public final class DesktopLauncher {
 		config.height = 720;
 		config.resizable = false;
 		config.title = "2048";
+		config.vSyncEnabled = true;
 
 		new LwjglApplication(new Game2048(), config);
 	}
