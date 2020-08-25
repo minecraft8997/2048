@@ -1,27 +1,28 @@
 package ru.deewend.game2048;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
-public enum Direction {
+enum Direction {
     LEFT(field -> { // movable
         line(field, true);
-    }, field -> { // fixable
-        fixLines(field, true);
+    }, (field, score) -> { // fixable
+        fixLines(field, score, true);
     }),
     RIGHT(field -> { // movable
         line(field, false);
-    }, field -> { // fixable
-        fixLines(field, false);
+    }, (field, score) -> { // fixable
+        fixLines(field, score, false);
     }),
     UP(field -> { // movable
         column(field, true);
-    }, field -> { // fixable
-        fixColumns(field, true);
+    }, (field, score) -> { // fixable
+        fixColumns(field, score, true);
     }),
     DOWN(field -> { // movable
         column(field, false);
-    }, field -> { // fixable
-        fixColumns(field, false);
+    }, (field, score) -> { // fixable
+        fixColumns(field, score, false);
     });
 
     private final Movable movable;
@@ -161,48 +162,56 @@ public enum Direction {
         }
     }
 
-    private static void swap(final int[][] field, final int i0, final int j0, final int i1, final int j1) {
+    private static void swap(
+            final int[][] field, final int i0, final int j0, final int i1, final int j1
+    ) {
         final int temp = field[i0][j0];
 
         field[i0][j0] = field[i1][j1];
         field[i1][j1] = temp;
     }
 
-    public void move(final int[][] field) {
+    void move(final int[][] field) {
         movable.move(field);
     }
 
-    private static void fixLines(final int[][] field, final boolean left) {
-        for (int i = 0; i < field.length; ++i) {
-            if (left) {
+    private static void fixLines(final int[][] field, final AtomicLong score, final boolean left) {
+        for (int i = 0; i < field.length; ++i)
+            if (left)
                 for (int j = 0; j < field[i].length - 1; ++j) {
-                    if (field[i][j] == field[i][j + 1]) {
+                    final int valueOfTile = field[i][j];
+
+                    if (valueOfTile > 0 && valueOfTile == field[i][j + 1]) {
                         field[i][j]++;
+                        if (score != null)
+                            score.addAndGet(((long) Math.pow(2, field[i][j + 1])) * 2L);
                         field[i][j + 1] = 0;
 
                         LEFT.move(field);
                     }
                 }
-            } else {
+            else
                 for (int j = field[i].length - 1; j > 0; --j) {
-                    if (field[i][j] == field[i][j - 1]) {
+                    final int valueOfTile = field[i][j];
+
+                    if (valueOfTile > 0 && valueOfTile == field[i][j - 1]) {
                         field[i][j]++;
+                        if (score != null)
+                            score.addAndGet(((long) Math.pow(2, field[i][j - 1])) * 2L);
                         field[i][j - 1] = 0;
 
                         RIGHT.move(field);
                     }
                 }
-            }
-        }
     }
 
-    private static void fixColumns(final int[][] field, final boolean up) {
+    private static void fixColumns(final int[][] field, final AtomicLong score, final boolean up) {
         transform(field);
-        fixLines(field, !up);
+        fixLines(field, score, !up);
         retrieve(field);
     }
 
-    public void fix(final int[][] field) {
-        fixable.fix(field);
+    void fix(final int[][] field, final AtomicLong score) {
+        fixable.fix(field, score);
     }
 }

@@ -1,22 +1,25 @@
 package ru.deewend.game2048;
 
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
-public enum Logic {
+import static ru.deewend.game2048.Game2048.lengthOfTheGameFieldSide;
+import static ru.deewend.game2048.Game2048.winningValue;
+
+enum Logic {
     INSTANCE;
 
-    private final int fieldLength = 4;
+    private final SecureRandom random = new SecureRandom();
 
-    private final Random random = new SecureRandom();
-
+    private final AtomicLong score = new AtomicLong();
     private volatile boolean gameOver = false;
     private volatile boolean won = false;
 
-    private final int[][] field = new int[fieldLength][fieldLength];
+    private final int[][] field = new int[lengthOfTheGameFieldSide][lengthOfTheGameFieldSide];
+
+    public static final int MAX_TRANSPARENCY = 1200;
+    private volatile Pair<int[], Integer> newlyAddedTile;
 
     // this method requires an external synchronization!
     private static int[][] clone(final int[][] field) {
@@ -24,7 +27,7 @@ public enum Logic {
     }
 
     synchronized void init() {
-        final int fieldSize = fieldLength * fieldLength;
+        final int fieldSize = lengthOfTheGameFieldSide * lengthOfTheGameFieldSide;
 
         final int firstCellPos = random.nextInt(fieldSize);
         final int secondCellPos;
@@ -43,15 +46,9 @@ public enum Logic {
             secondCellPos = tmpSecondCellPos;
         }
 
-        field[firstCellPos / fieldLength][firstCellPos % fieldLength]
-                = (random.nextInt(10) == 0 ? 2 : 1);
-        field[secondCellPos / fieldLength][secondCellPos % fieldLength]
-                = (random.nextInt(10) == 0 ? 2 : 1);
-
-        System.out.println("CURRENT:");
-        for (int[] line : field)
-            System.out.println(Arrays.toString(line));
-        System.out.println();
+        field[firstCellPos / lengthOfTheGameFieldSide][firstCellPos % lengthOfTheGameFieldSide] =
+                (random.nextInt(10) == 0 ? 2 : 1);
+        field[secondCellPos / lengthOfTheGameFieldSide][secondCellPos % lengthOfTheGameFieldSide] = 1;
     }
 
     // calling this method is required when player decides to start a new game.
@@ -59,6 +56,7 @@ public enum Logic {
         for (final int[] e : field)
             Arrays.fill(e, 0);
 
+        score.set(0L);
         gameOver = false;
         won = false;
 
@@ -72,17 +70,14 @@ public enum Logic {
             final int[][] before = clone(field);
 
             direction.move(field);
-            direction.fix(field);
+            direction.fix(field, score);
 
             if (Arrays.deepEquals(field, before)) // that was not a move, nothing was changed!
                 return;
 
-            placeNewTileIfPossible();
+            newlyAddedTile = null;
 
-            System.out.println("CURRENT:");
-            for (int[] line : field)
-                System.out.println(Arrays.toString(line));
-            System.out.println();
+            placeNewTileIfPossible();
 
             if (checkPlayerWon()) {
                 gameOver = true;
@@ -109,6 +104,8 @@ public enum Logic {
         if (availableIndexes.size() > 0) {
             final int[] randomPosition = availableIndexes.get(random.nextInt(availableIndexes.size()));
             field[randomPosition[0]][randomPosition[1]] = 1;
+
+            newlyAddedTile = new Pair<>(randomPosition, 0);
         }
     }
 
@@ -116,7 +113,7 @@ public enum Logic {
     private boolean checkPlayerWon() {
         for (final int[] l : field)
             for (final int e : l)
-                if (e >= 11)
+                if (e >= winningValue)
                     return true;
 
         return false;
@@ -129,7 +126,7 @@ public enum Logic {
             final int[][] oneMoreFieldCopy = clone(fieldCopy);
 
             direction.move(fieldCopy);
-            direction.fix(fieldCopy);
+            direction.fix(fieldCopy, null);
 
             if (!Arrays.deepEquals(fieldCopy, oneMoreFieldCopy))
                 return true;
@@ -138,54 +135,27 @@ public enum Logic {
         return false;
     }
 
-    /*
-    // this method requires an external synchronization!
-    private void fix(final Direction direction, final int[][] field) {
-
-        /*
-        int[] previousLine = field[0];
-
-        for (int i = 0; i < field.length; ++i) {
-            if (i == 0) {
-                if (direction == Direction.LEFT || direction == Direction.RIGHT)
-                    lineFix(field, direction, previousLine);
-
-                continue;
-            }
-
-            if (direction == Direction.LEFT || direction == Direction.RIGHT)
-                lineFix(field, direction, field[i]);
-            else
-                for (int j = 0; j < field[i].length; ++j)
-                    if (previousLine[j] == field[i][j]) {
-                        previousLine[j]++;
-                        field[i][j] = 0;
-                        direction.move(field);
-                    }
-
-            previousLine = field[i];
-        }
-         *//*
+    long getScore() {
+        return score.get();
     }
-
-    /*
-    // this method requires an external synchronization!
-    private void lineFix(final int[][] field, final Direction direction, final int[] line) {
-        for (int j = 0; j < line.length - 1; ++j)
-            if (line[j] == line[j + 1]) {
-                line[j + 1]++;
-                line[j] = 0;
-
-                direction.move(field);
-            }
-    }
-     */
 
     synchronized int[][] getField() {
         return clone(field);
     }
 
-    boolean isGameOver() {
+    synchronized Pair<int[], Integer> getNewlyAddedTile() {
+        Pair<int[], Integer> snapshot = newlyAddedTile;
+
+        if (snapshot != null && snapshot.getSecond() > MAX_TRANSPARENCY) {
+            newlyAddedTile = null;
+
+            return null;
+        }
+
+        return snapshot;
+    }
+
+    boolean gameOver() {
         return gameOver;
     }
 
