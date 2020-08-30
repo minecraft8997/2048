@@ -16,6 +16,8 @@ public final class DesktopLauncher {
 			"Please view README.txt before editing game.properties file!";
 
 	public static void main(final String[] args) {
+		Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler());
+
 		initValues();
 
 		final LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
@@ -27,8 +29,6 @@ public final class DesktopLauncher {
 		config.title = (int) Math.pow(2, Values.INSTANCE.getInt(winningValue))
 				+ " | Score: 0 | High score: " + Values.INSTANCE.getLong(highScore);
 		config.vSyncEnabled = true;
-
-		Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler());
 
 		new LwjglApplication(new Game2048(), config);
 	}

@@ -8,6 +8,8 @@ import java.util.Scanner;
 public enum HighScoreManager {
     INSTANCE;
 
+    private final String CURRENT_DATA_FILE_VERSION = "1";
+
     private String encrypt(final String str) {
         final StringBuilder encrypted = new StringBuilder();
 
@@ -54,16 +56,16 @@ public enum HighScoreManager {
         }
 
         final PrintWriter writer = new PrintWriter(data);
-        writer.print(encrypt(new String(output)));
+        writer.print(CURRENT_DATA_FILE_VERSION + " " + encrypt(new String(output)));
         writer.close();
     }
 
     // assuming that there is ./2048 directory!
     public long readHighScore() throws IOException {
-        final File data = new File("2048" + File.separator + "data.db");
+        final File dataFile = new File("2048" + File.separator + "data.db");
 
         boolean createdJustNow = false;
-        if (!data.isFile() && (createdJustNow = true) && !data.createNewFile())
+        if (!dataFile.isFile() && (createdJustNow = true) && !dataFile.createNewFile())
             throw new RuntimeException("Unable to create data file!");
 
         if (createdJustNow) {
@@ -72,7 +74,11 @@ public enum HighScoreManager {
             return 0L;
         }
 
-        final Scanner input = new Scanner(data);
+        final Scanner input = new Scanner(dataFile);
+        final String[] data = input.nextLine().split(" ");
+        if (data.length < 2 || !data[0].equals(CURRENT_DATA_FILE_VERSION))
+            throw new RuntimeException("Unsupported data file version!");
+
         final String decryptedContents = decrypt(input.nextLine());
         input.close();
 
