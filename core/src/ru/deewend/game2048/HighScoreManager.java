@@ -76,11 +76,12 @@ public enum HighScoreManager {
 
         final Scanner input = new Scanner(dataFile);
         final String[] data = input.nextLine().split(" ");
+        input.close();
+
         if (data.length < 2 || !data[0].equals(CURRENT_DATA_FILE_VERSION))
             throw new RuntimeException("Unsupported data file version!");
 
-        final String decryptedContents = decrypt(input.nextLine());
-        input.close();
+        final String decryptedContents = decrypt(data[1]);
 
         final StringBuilder digits = new StringBuilder();
         for (final char e : decryptedContents.toCharArray())
