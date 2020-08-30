@@ -6,32 +6,40 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 import java.util.Objects;
 
-import static ru.deewend.game2048.Logic.MAX_TRANSPARENCY;
+import static ru.deewend.game2048.Logic.DURATION;
 
 public final class Game2048 extends Game implements InputProcessor {
     public static final int lengthOfTheGameFieldSide;
     public static final int winningValue;
     private static final int realWinningValue;
+    static long highScore;
 
+    private OrthographicCamera camera;
     private SpriteBatch batch;
+    private ShapeRenderer shapeRenderer;
     private long currentScore;
 
     static {
-        lengthOfTheGameFieldSide = IntValues.INSTANCE.get("lengthOfTheGameFieldSide");
-        winningValue = IntValues.INSTANCE.get("winningValue");
-        realWinningValue = (int) Math.pow(2, winningValue);
+        lengthOfTheGameFieldSide = Values.INSTANCE.getInt(Constants.lengthOfTheGameFieldSide);
+        winningValue = Values.INSTANCE.getInt(Constants.winningValue);
+        highScore = Values.INSTANCE.getLong(Constants.highScore);
+        Values.INSTANCE.dispose();
 
-        IntValues.INSTANCE.dispose();
+        realWinningValue = (int) Math.pow(2, winningValue);
     }
 
     @Override
     public void create() {
+        camera = new OrthographicCamera();
         batch = new SpriteBatch();
+        shapeRenderer = new ShapeRenderer();
 
         TextureManager.INSTANCE.init();
         Logic.INSTANCE.init();
@@ -44,20 +52,31 @@ public final class Game2048 extends Game implements InputProcessor {
         Gdx.gl.glClearColor(1f, 1f, 1f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        System.out.println(Gdx.graphics.getDeltaTime());
+        camera.update();
+
         final int[][] currentGameField = Logic.INSTANCE.getField();
-        final Pair<int[], Integer> newlyAddedTile = Logic.INSTANCE.getNewlyAddedTile();
+        final Pair<int[], Float> newlyAddedTile = Logic.INSTANCE.getNewlyAddedTile();
         final boolean gameOver = Logic.INSTANCE.gameOver();
+
+        batch.setProjectionMatrix(camera.combined);
+        shapeRenderer.setProjectionMatrix(camera.combined);
 
         batch.begin();
 
-        if (gameOver) setTransparency(batch, 0.3f);
+        if (gameOver)
+            setTransparency(batch, 0.3f);
         else {
-            final long score = Logic.INSTANCE.getScore();
+            final long score = Logic.INSTANCE.score;
+
             if (currentScore != score) {
                 currentScore = score;
 
-                Gdx.graphics.setTitle(realWinningValue + " | Score: " + score);
+                Gdx.graphics.setTitle(
+                        realWinningValue +
+                                " | " +
+                                "Score: " + score + (score > highScore ? " (!)" : "") + " | " +
+                                "High score: " + highScore
+                );
             }
         }
 
@@ -74,10 +93,8 @@ public final class Game2048 extends Game implements InputProcessor {
                         i == newlyAddedTile.getFirst()[0] && j == newlyAddedTile.getFirst()[1]
                 ) {
                     setTransparency(batch, currentBatchTransparency *
-                            ((float) newlyAddedTile.getSecond() / MAX_TRANSPARENCY));
-
-                    final double delta = round(Gdx.graphics.getDeltaTime(), 3);
-                    newlyAddedTile.setSecond(newlyAddedTile.getSecond() + (int) (delta * 1000));
+                            (newlyAddedTile.getSecond() / DURATION));
+                    newlyAddedTile.setSecond(newlyAddedTile.getSecond() + Gdx.graphics.getDeltaTime());
                 }
 
                 batch.draw(tile,
@@ -88,6 +105,29 @@ public final class Game2048 extends Game implements InputProcessor {
                 setTransparency(batch, currentBatchTransparency);
             }
 
+        batch.end();
+
+        {
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+            shapeRenderer.setColor(Color.BLACK);
+
+            final int lengthOfTile = TextureManager.INSTANCE.getLengthOfTile();
+            final int a = 0;
+            final int b = currentGameField.length * lengthOfTile;
+            int xCache;
+            int yCache;
+
+            for (int i = 1; i < currentGameField.length; ++i) {
+                shapeRenderer.line(a, (yCache = i * lengthOfTile), b, yCache);
+                shapeRenderer.line((xCache = i * lengthOfTile), b, xCache, a);
+            }
+
+            shapeRenderer.end();
+        }
+
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+
         if (gameOver) {
             setTransparency(batch, 1f);
 
@@ -96,13 +136,35 @@ public final class Game2048 extends Game implements InputProcessor {
                     TextureManager.INSTANCE.getGameOverTexture();
             textureIsNonNull(title, null);
 
+            final Texture pressEnterToStartANewGameTexture =
+                    TextureManager.INSTANCE.getPressEnterToStartANewGameTexture();
+            textureIsNonNull(pressEnterToStartANewGameTexture, null);
+
             batch.draw(title,
                     (Gdx.graphics.getWidth() / 2f) - (title.getWidth() / 2f),
                     (Gdx.graphics.getHeight() / 2f) - (title.getHeight() / 2f)
             );
+
+            batch.draw(pressEnterToStartANewGameTexture, 0f, 0f);
         }
 
+        final Texture author = TextureManager.INSTANCE.getAuthor();
+        textureIsNonNull(author, null);
+
+        batch.draw(author, 0f, Gdx.graphics.getHeight() - author.getHeight());
         batch.end();
+    }
+
+    @Override
+    public void resize(final int width, final int height) {
+        final int requiredLengthOfWindowSide =
+                Logic.INSTANCE.getField().length * TextureManager.INSTANCE.getLengthOfTile();
+        if (width != requiredLengthOfWindowSide || height != requiredLengthOfWindowSide)
+            throw new RuntimeException("Illegal width/height!");
+
+        camera.viewportWidth = width;
+        camera.viewportHeight = height;
+        camera.position.set(width / 2f, height / 2f, 0f);
     }
 
     private static float getTransparency(final SpriteBatch batch) {
@@ -121,20 +183,12 @@ public final class Game2048 extends Game implements InputProcessor {
         batch.setColor(currentColor.r, currentColor.g, currentColor.b, transparency);
     }
 
-    private static double round(double number, int scale) {
-        int pow = 10;
-        for (int i = 1; i < scale; i++)
-            pow *= 10;
-        double tmp = number * pow;
-        return (double) (int) ((tmp - (int) tmp) >= 0.5 ? tmp + 1 : tmp) / pow;
-    }
-
     private void textureIsNonNull(final Texture texture, final Integer valueOfTile) {
         if (texture == null)
             throw new IllegalStateException(valueOfTile == null ?
                     "Couldn't find the required texture!" :
-                    "Couldn't find the texture for a tile, which value is "
-                            + Math.pow(2, valueOfTile) + "!"
+                    "Couldn't find the texture for a tile, which value is " +
+                            (int) Math.pow(2, valueOfTile) + "!"
             );
     }
 

@@ -1,28 +1,27 @@
 package ru.deewend.game2048;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
 
 enum Direction {
     LEFT(field -> { // movable
         line(field, true);
-    }, (field, score) -> { // fixable
-        fixLines(field, score, true);
+    }, (field, real) -> { // fixable
+        fixLines(field, real, true);
     }),
     RIGHT(field -> { // movable
         line(field, false);
-    }, (field, score) -> { // fixable
-        fixLines(field, score, false);
+    }, (field, real) -> { // fixable
+        fixLines(field, real, false);
     }),
     UP(field -> { // movable
         column(field, true);
-    }, (field, score) -> { // fixable
-        fixColumns(field, score, true);
+    }, (field, real) -> { // fixable
+        fixColumns(field, real, true);
     }),
     DOWN(field -> { // movable
         column(field, false);
-    }, (field, score) -> { // fixable
-        fixColumns(field, score, false);
+    }, (field, real) -> { // fixable
+        fixColumns(field, real, false);
     });
 
     private final Movable movable;
@@ -175,7 +174,7 @@ enum Direction {
         movable.move(field);
     }
 
-    private static void fixLines(final int[][] field, final AtomicLong score, final boolean left) {
+    private static void fixLines(final int[][] field, final boolean real, final boolean left) {
         for (int i = 0; i < field.length; ++i)
             if (left)
                 for (int j = 0; j < field[i].length - 1; ++j) {
@@ -183,8 +182,7 @@ enum Direction {
 
                     if (valueOfTile > 0 && valueOfTile == field[i][j + 1]) {
                         field[i][j]++;
-                        if (score != null)
-                            score.addAndGet(((long) Math.pow(2, field[i][j + 1])) * 2L);
+                        if (real) Logic.INSTANCE.score += ((long) Math.pow(2, field[i][j + 1])) * 2L;
                         field[i][j + 1] = 0;
 
                         LEFT.move(field);
@@ -196,8 +194,7 @@ enum Direction {
 
                     if (valueOfTile > 0 && valueOfTile == field[i][j - 1]) {
                         field[i][j]++;
-                        if (score != null)
-                            score.addAndGet(((long) Math.pow(2, field[i][j - 1])) * 2L);
+                        if (real) Logic.INSTANCE.score += (((long) Math.pow(2, field[i][j - 1])) * 2L);
                         field[i][j - 1] = 0;
 
                         RIGHT.move(field);
@@ -205,13 +202,13 @@ enum Direction {
                 }
     }
 
-    private static void fixColumns(final int[][] field, final AtomicLong score, final boolean up) {
+    private static void fixColumns(final int[][] field, final boolean real, final boolean up) {
         transform(field);
-        fixLines(field, score, !up);
+        fixLines(field, real, !up);
         retrieve(field);
     }
 
-    void fix(final int[][] field, final AtomicLong score) {
-        fixable.fix(field, score);
+    void fix(final int[][] field, final boolean real) {
+        fixable.fix(field, real);
     }
 }
