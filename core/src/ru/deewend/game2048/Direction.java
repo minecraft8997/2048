@@ -194,7 +194,7 @@ enum Direction {
 
                     if (valueOfTile > 0 && valueOfTile == field[i][j - 1]) {
                         field[i][j]++;
-                        if (real) Logic.INSTANCE.score += (((long) Math.pow(2, field[i][j - 1])) * 2L);
+                        if (real) Logic.INSTANCE.score += ((long) Math.pow(2, field[i][j - 1])) * 2L;
                         field[i][j - 1] = 0;
 
                         RIGHT.move(field);

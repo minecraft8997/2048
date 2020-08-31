@@ -60,6 +60,7 @@ enum Logic {
         if (beatHighScore) Game2048.highScore = score;
 
         score = 0L;
+        beatHighScore = false;
         gameOver = false;
         won = false;
         newlyAddedTile = null;
@@ -150,7 +151,7 @@ enum Logic {
     }
 
     Pair<int[], Float> getNewlyAddedTile() {
-        Pair<int[], Float> snapshot = newlyAddedTile;
+        final Pair<int[], Float> snapshot = newlyAddedTile;
 
         if (snapshot != null && snapshot.getSecond() >= DURATION) {
             newlyAddedTile = null;

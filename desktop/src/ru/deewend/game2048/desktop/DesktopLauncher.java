@@ -12,8 +12,73 @@ import java.util.*;
 import static ru.deewend.game2048.Constants.*;
 
 public final class DesktopLauncher {
+	private static final String readMe = "Hello, dear player!\n" +
+			"\n" +
+			"Thank you for playing this game! Here you will see how to customize it " +
+			"by editing game.properties file & more.\n" +
+			"\n" +
+			"Q: What values are acceptable in the \"mode\" property?\n" +
+			"A:\n" +
+			"1) \"classic\". You need to reach the 2048 tile. Size of the game field is 4 x 4.\n" +
+			"2) \"1024complicated\". You need to reach the 1024 tile. Size of the game field is 3 x 3.\n" +
+			"3) \"IMPOSSIBLE\". You need to reach the 131072 tile. Size of the game field is 4 x 4. " +
+			"Seems to be very easy. :)\n" +
+			"4) \"custom\". See below about this mode.\n" +
+			"\n" +
+			"Q: Can I play 4096 in 5 x 5?\n" +
+			"A: Yes! Follow these steps:\n" +
+			"1. Set value of \"mode\" property to \"custom\".\n" +
+			"2. Set value of \"lengthOfTheGameFieldSide\" property to 5.\n" +
+			"3. Set value of \"winningValue\" property to 4096.\n" +
+			"4. Save changes. Profit!\n" +
+			"\n" +
+			"Q: How can I play 8192 in 4 x 4?\n" +
+			"A:\n" +
+			"mode=custom\n" +
+			"lengthOfTheGameFieldSide=4\n" +
+			"winningValue=8192\n" +
+			"\n" +
+			"Q: How can I play 1024 in 6 x 6?\n" +
+			"A:\n" +
+			"mode=custom\n" +
+			"lengthOfTheGameFieldSide=6\n" +
+			"winningValue=1024\n" +
+			"\n" +
+			"Q: How can I play 1024 in 3 x 3?\n" +
+			"A:\n" +
+			"mode=1024complicated\n" +
+			"OR:\n" +
+			"mode=custom\n" +
+			"lengthOfTheGameFieldSide=3\n" +
+			"winningValue=1024\n" +
+			"\n" +
+			"Hope you understood how it works :)\n" +
+			"\n" +
+			"PLEASE NOTE:\n" +
+			"1) If value of \"mode\" property is not equal to \"custom\", values of " +
+			"\"lengthOfTheGameFieldSide\" and \"winningValue\" properties will be ignored.\n" +
+			"2) Min value of \"lengthOfTheGameFieldSide\" property is 3, max is 32.\n" +
+			"3) Min value of \"winningValue\" property is 1024, max is 131072.\n" +
+			"WARNING #1: providing a value, which is not a power of 2, will produce a game crash! " +
+			"So acceptable values are 1024, 2048, 4096, 8192, 16384, 32768, 65536 and 131072.\n" +
+			"WARNING #2: if value of \"lengthOfTheGameFieldSide\" property is 3, " +
+			"the ONLY acceptable value for \"winningValue\" property is 1024, " +
+			"because you can't reach the 2048 tile (or greater) in 3 x 3! " +
+			"Providing another value will also produce a game crash.\n" +
+			"\n" +
+			"Let's continue Q&A.\n" +
+			"\n" +
+			"Q: I wish to remove \"by deewend (Ivan Shubin)\" watermark, what should I do?\n" +
+			"A: Set value of \"IKnowThatTheCreatorOfThisGameIsDeewend\" property to true.\n" +
+			"\n" +
+			"Q: How can I contact you?\n" +
+			"A: If you found a bug, or you know how to improve the game, please " +
+			"e-mail me at realdeewend@gmail.com. Thanks!\n" +
+			"\n" +
+			"Enjoy! :)";
+
 	private static final String viewReadMe =
-			"Please view README.txt before editing game.properties file!";
+			"Please view ReadMe.txt before editing game.properties file!";
 
 	public static void main(final String[] args) {
 		Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler());
@@ -39,7 +104,22 @@ public final class DesktopLauncher {
 		if (!gameDir.isDirectory() && !gameDir.mkdir())
 			throw new RuntimeException("Unable to create the game directory!");
 
+		final File readMeFile = new File(gameDir.getPath() + File.separator + "ReadMe.txt");
+
 		try {
+			{
+				boolean createdJustNow = false;
+
+				if (!readMeFile.isFile() && (createdJustNow = true) && !readMeFile.createNewFile())
+					throw new RuntimeException("Unable to create ReadMe.txt file!");
+
+				if (createdJustNow) {
+					final PrintWriter writer = new PrintWriter(readMeFile);
+					writer.print(readMe);
+					writer.close();
+				}
+			}
+
 			Values.INSTANCE.addLong(highScore, HighScoreManager.INSTANCE.readHighScore());
 		} catch (final Throwable t) {
 			throw new RuntimeException(t);
@@ -53,6 +133,7 @@ public final class DesktopLauncher {
 			properties.setProperty("mode", "classic");
 			properties.setProperty(lengthOfTheGameFieldSide, "4");
 			properties.setProperty(winningValue, "2048");
+			properties.setProperty(IKnowThatTheCreatorOfThisGameIsDeewend, "false");
 
 			try {
 				if (!propertiesFile.createNewFile())
@@ -61,7 +142,7 @@ public final class DesktopLauncher {
 				final FileOutputStream outputStream = new FileOutputStream(propertiesFile);
 				properties.store(outputStream,
 						"If you see this file first time, " +
-								"view README.txt to get more information"
+								"view ReadMe.txt to get more information"
 				);
 
 				outputStream.close();
@@ -113,12 +194,18 @@ public final class DesktopLauncher {
 			}
 		}
 
+		Values.INSTANCE.addInt(IKnowThatTheCreatorOfThisGameIsDeewend,
+				Boolean.TRUE.toString().equals(properties.getProperty(IKnowThatTheCreatorOfThisGameIsDeewend)) ?
+						1 : 0
+		);
+
 		Values.INSTANCE.lock();
 	}
 
 	private static void putDefaultValues() {
 		Values.INSTANCE.addInt(lengthOfTheGameFieldSide, 4);
 		Values.INSTANCE.addInt(winningValue, 11);
+		Values.INSTANCE.addInt(IKnowThatTheCreatorOfThisGameIsDeewend, 0);
 	}
 
 	private static void put(final Properties properties, final String key) {
@@ -136,7 +223,7 @@ public final class DesktopLauncher {
 						throw new RuntimeException(errorMessage);
 
 					value = (int) (Math.log(value) / Math.log(2));
-				} else if (key.equals(lengthOfTheGameFieldSide) && !(value >= 3 && value <= 256))
+				} else if (key.equals(lengthOfTheGameFieldSide) && !(value >= 3 && value <= 32))
 					throw new RuntimeException(errorMessage);
 			}
 

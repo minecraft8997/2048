@@ -5,5 +5,6 @@ public final class Constants {
 
     public static final String lengthOfTheGameFieldSide = "lengthOfTheGameFieldSide";
     public static final String winningValue = "winningValue";
+    public static final String IKnowThatTheCreatorOfThisGameIsDeewend = "IKnowThatTheCreatorOfThisGameIsDeewend";
     public static final String highScore = "highScore";
 }

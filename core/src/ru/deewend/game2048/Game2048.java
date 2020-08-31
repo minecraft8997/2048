@@ -18,6 +18,8 @@ import static ru.deewend.game2048.Logic.DURATION;
 public final class Game2048 extends Game implements InputProcessor {
     public static final int lengthOfTheGameFieldSide;
     public static final int winningValue;
+    public static final boolean IKnowThatTheCreatorOfThisGameIsDeewend;
+
     private static final int realWinningValue;
     static long highScore;
 
@@ -29,10 +31,26 @@ public final class Game2048 extends Game implements InputProcessor {
     static {
         lengthOfTheGameFieldSide = Values.INSTANCE.getInt(Constants.lengthOfTheGameFieldSide);
         winningValue = Values.INSTANCE.getInt(Constants.winningValue);
+
+        {
+            final int IKnowThatTheCreatorOfThisGameIsDeewendTmp =
+                    Values.INSTANCE.getInt(Constants.IKnowThatTheCreatorOfThisGameIsDeewend);
+
+            if (IKnowThatTheCreatorOfThisGameIsDeewendTmp < 0 || IKnowThatTheCreatorOfThisGameIsDeewendTmp > 1)
+                throw new RuntimeException("Invalid value of \"IKnowThatTheCreatorOfThisGameIsDeewend\" property. " +
+                        "Probably it's a bug :(");
+
+            IKnowThatTheCreatorOfThisGameIsDeewend = IKnowThatTheCreatorOfThisGameIsDeewendTmp == 1;
+        }
+
         highScore = Values.INSTANCE.getLong(Constants.highScore);
+
         Values.INSTANCE.dispose();
 
         realWinningValue = (int) Math.pow(2, winningValue);
+        if (lengthOfTheGameFieldSide == 3 && winningValue > 10)
+            throw new RuntimeException("You can't play " + realWinningValue + " in 3 x 3, " +
+                    "because reaching this tile is impossible!");
     }
 
     @Override
@@ -58,14 +76,7 @@ public final class Game2048 extends Game implements InputProcessor {
         final Pair<int[], Float> newlyAddedTile = Logic.INSTANCE.getNewlyAddedTile();
         final boolean gameOver = Logic.INSTANCE.gameOver();
 
-        batch.setProjectionMatrix(camera.combined);
-        shapeRenderer.setProjectionMatrix(camera.combined);
-
-        batch.begin();
-
-        if (gameOver)
-            setTransparency(batch, 0.3f);
-        else {
+        {
             final long score = Logic.INSTANCE.score;
 
             if (currentScore != score) {
@@ -79,6 +90,12 @@ public final class Game2048 extends Game implements InputProcessor {
                 );
             }
         }
+
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+
+        if (gameOver)
+            setTransparency(batch, 0.3f);
 
         for (int i = 0; i < currentGameField.length; ++i)
             for (int j = 0; j < currentGameField[i].length; ++j) {
@@ -108,6 +125,7 @@ public final class Game2048 extends Game implements InputProcessor {
         batch.end();
 
         {
+            shapeRenderer.setProjectionMatrix(camera.combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
             shapeRenderer.setColor(Color.BLACK);
 
@@ -125,12 +143,15 @@ public final class Game2048 extends Game implements InputProcessor {
             shapeRenderer.end();
         }
 
+        setTransparency(batch, 1f);
+
+        if (!(gameOver || !IKnowThatTheCreatorOfThisGameIsDeewend))
+            return;
+
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
 
         if (gameOver) {
-            setTransparency(batch, 1f);
-
             final Texture title = Logic.INSTANCE.won() ?
                     TextureManager.INSTANCE.getYouWonTexture() :
                     TextureManager.INSTANCE.getGameOverTexture();
@@ -148,10 +169,13 @@ public final class Game2048 extends Game implements InputProcessor {
             batch.draw(pressEnterToStartANewGameTexture, 0f, 0f);
         }
 
-        final Texture author = TextureManager.INSTANCE.getAuthor();
-        textureIsNonNull(author, null);
+        if (!IKnowThatTheCreatorOfThisGameIsDeewend) {
+            final Texture author = TextureManager.INSTANCE.getAuthor();
+            textureIsNonNull(author, null);
 
-        batch.draw(author, 0f, Gdx.graphics.getHeight() - author.getHeight());
+            batch.draw(author, 0f, Gdx.graphics.getHeight() - author.getHeight());
+        }
+
         batch.end();
     }
 
