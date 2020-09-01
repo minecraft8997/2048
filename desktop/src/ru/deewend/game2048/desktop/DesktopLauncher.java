@@ -6,6 +6,8 @@ import ru.deewend.game2048.Game2048;
 import ru.deewend.game2048.Values;
 import ru.deewend.game2048.HighScoreManager;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
 
@@ -86,7 +88,8 @@ public final class DesktopLauncher {
 		initValues();
 
 		final LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
-		final int lengthOfTheWindowSide = Values.INSTANCE.getInt(lengthOfTheGameFieldSide) * 180;
+		final int lengthOfTheWindowSide = Values.INSTANCE.getInt(lengthOfTheGameFieldSide) *
+				getPreLengthOfTheTextureSide();
 
 		config.width = lengthOfTheWindowSide;
 		config.height = lengthOfTheWindowSide;
@@ -96,6 +99,17 @@ public final class DesktopLauncher {
 		config.vSyncEnabled = true;
 
 		new LwjglApplication(new Game2048(), config);
+	}
+
+	private static int getPreLengthOfTheTextureSide() {
+		try {
+			return ImageIO.read(
+					Objects.requireNonNull(DesktopLauncher.class.getClassLoader().getResource("1.png"),
+							"Couldn't find the required texture!")
+			).getWidth();
+		} catch (final Throwable t) {
+			throw new RuntimeException(t);
+		}
 	}
 
 	private static void initValues() {
