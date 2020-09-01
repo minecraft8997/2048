@@ -14,7 +14,6 @@ enum Logic {
     private final SecureRandom random = new SecureRandom();
 
     long score = 0L;
-    boolean beatHighScore;
     private boolean gameOver = false; // LibGDX is single-threaded, so "volatile" keyword isn't needed
     private boolean won = false;
 
@@ -57,10 +56,9 @@ enum Logic {
         for (final int[] e : field)
             Arrays.fill(e, 0);
 
-        if (beatHighScore) Game2048.highScore = score;
+        if (score > Game2048.highScore) Game2048.highScore = score;
 
         score = 0L;
-        beatHighScore = false;
         gameOver = false;
         won = false;
         newlyAddedTile = null;
@@ -83,14 +81,11 @@ enum Logic {
 
         placeNewTileIfPossible();
 
-        if (beatHighScore = score > Game2048.highScore) {
-            //Game2048.highScore = score;
-
-            try {
+        try {
+            if (score > Game2048.highScore && HighScoreManager.INSTANCE.readHighScore() < score)
                 HighScoreManager.INSTANCE.storeHighScore(score);
-            } catch (final Throwable t) {
-                throw new RuntimeException(t);
-            }
+        } catch (final Throwable t) {
+            throw new RuntimeException(t);
         }
 
         if (checkPlayerWon()) {

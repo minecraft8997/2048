@@ -235,21 +235,25 @@ public final class Game2048 extends Game implements InputProcessor {
         }
 
         switch (keycode) {
+            case Input.Keys.A:
             case Input.Keys.LEFT: {
                 Logic.INSTANCE.makeMove(Direction.LEFT);
                 return true;
             }
 
+            case Input.Keys.D:
             case Input.Keys.RIGHT: {
                 Logic.INSTANCE.makeMove(Direction.RIGHT);
                 return true;
             }
 
+            case Input.Keys.W:
             case Input.Keys.UP: {
                 Logic.INSTANCE.makeMove(Direction.UP);
                 return true;
             }
 
+            case Input.Keys.S:
             case Input.Keys.DOWN: {
                 Logic.INSTANCE.makeMove(Direction.DOWN);
                 return true;
