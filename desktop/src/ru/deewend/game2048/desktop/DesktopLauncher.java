@@ -3,13 +3,16 @@ package ru.deewend.game2048.desktop;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
 import ru.deewend.game2048.Game2048;
-import ru.deewend.game2048.Values;
 import ru.deewend.game2048.HighScoreManager;
+import ru.deewend.game2048.Values;
 
 import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
+import java.util.Objects;
+import java.util.Properties;
 
 import static ru.deewend.game2048.Constants.*;
 
